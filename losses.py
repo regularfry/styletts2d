@@ -1,5 +1,4 @@
 import torch
-from torch import nn
 import torch.nn.functional as F
 import torchaudio
 from transformers import AutoModel
@@ -46,12 +45,12 @@ class STFTLoss(torch.nn.Module):
         x_mag = self.to_mel(x)
         mean, std = -4, 4
         x_mag = (torch.log(1e-5 + x_mag) - mean) / std
-        
+
         y_mag = self.to_mel(y)
         mean, std = -4, 4
         y_mag = (torch.log(1e-5 + y_mag) - mean) / std
-        
-        sc_loss = self.spectral_convergenge_loss(x_mag, y_mag)    
+
+        sc_loss = self.spectral_convergenge_loss(x_mag, y_mag)
         return sc_loss
 
 
@@ -92,8 +91,8 @@ class MultiResolutionSTFTLoss(torch.nn.Module):
         sc_loss /= len(self.stft_losses)
 
         return sc_loss
-    
-    
+
+
 def feature_loss(fmap_r, fmap_g):
     loss = 0
     for dr, dg in zip(fmap_r, fmap_g):
@@ -152,7 +151,7 @@ class GeneratorLoss(torch.nn.Module):
         super(GeneratorLoss, self).__init__()
         self.mpd = mpd
         self.msd = msd
-        
+
     def forward(self, y, y_hat):
         y_df_hat_r, y_df_hat_g, fmap_f_r, fmap_f_g = self.mpd(y, y_hat)
         y_ds_hat_r, y_ds_hat_g, fmap_s_r, fmap_s_g = self.msd(y, y_hat)
@@ -162,18 +161,18 @@ class GeneratorLoss(torch.nn.Module):
         loss_gen_s, losses_gen_s = generator_loss(y_ds_hat_g)
 
         loss_rel = generator_TPRLS_loss(y_df_hat_r, y_df_hat_g) + generator_TPRLS_loss(y_ds_hat_r, y_ds_hat_g)
-        
+
         loss_gen_all = loss_gen_s + loss_gen_f + loss_fm_s + loss_fm_f + loss_rel
-        
+
         return loss_gen_all.mean()
-    
+
 class DiscriminatorLoss(torch.nn.Module):
 
     def __init__(self, mpd, msd):
         super(DiscriminatorLoss, self).__init__()
         self.mpd = mpd
         self.msd = msd
-        
+
     def forward(self, y, y_hat):
         # MPD
         y_df_hat_r, y_df_hat_g, _, _ = self.mpd(y, y_hat)
@@ -181,15 +180,15 @@ class DiscriminatorLoss(torch.nn.Module):
         # MSD
         y_ds_hat_r, y_ds_hat_g, _, _ = self.msd(y, y_hat)
         loss_disc_s, losses_disc_s_r, losses_disc_s_g = discriminator_loss(y_ds_hat_r, y_ds_hat_g)
-        
+
         loss_rel = discriminator_TPRLS_loss(y_df_hat_r, y_df_hat_g) + discriminator_TPRLS_loss(y_ds_hat_r, y_ds_hat_g)
 
 
         d_loss = loss_disc_s + loss_disc_f + loss_rel
-        
+
         return d_loss.mean()
-   
-    
+
+
 class WavLMLoss(torch.nn.Module):
 
     def __init__(self, model, wd, model_sr, slm_sr=16000):
@@ -197,7 +196,7 @@ class WavLMLoss(torch.nn.Module):
         self.wavlm = AutoModel.from_pretrained(model)
         self.wd = wd
         self.resample = torchaudio.transforms.Resample(model_sr, slm_sr)
-     
+
     def forward(self, wav, y_rec):
         with torch.no_grad():
             wav_16 = self.resample(wav)
@@ -208,18 +207,18 @@ class WavLMLoss(torch.nn.Module):
         floss = 0
         for er, eg in zip(wav_embeddings, y_rec_embeddings):
             floss += torch.mean(torch.abs(er - eg))
-        
+
         return floss.mean()
-    
+
     def generator(self, y_rec):
         y_rec_16 = self.resample(y_rec)
         y_rec_embeddings = self.wavlm(input_values=y_rec_16, output_hidden_states=True).hidden_states
         y_rec_embeddings = torch.stack(y_rec_embeddings, dim=1).transpose(-1, -2).flatten(start_dim=1, end_dim=2)
         y_df_hat_g = self.wd(y_rec_embeddings)
         loss_gen = torch.mean((1-y_df_hat_g)**2)
-        
+
         return loss_gen
-    
+
     def discriminator(self, wav, y_rec):
         with torch.no_grad():
             wav_16 = self.resample(wav)
@@ -232,14 +231,14 @@ class WavLMLoss(torch.nn.Module):
 
         y_d_rs = self.wd(y_embeddings)
         y_d_gs = self.wd(y_rec_embeddings)
-        
+
         y_df_hat_r, y_df_hat_g = y_d_rs, y_d_gs
-        
+
         r_loss = torch.mean((1-y_df_hat_r)**2)
         g_loss = torch.mean((y_df_hat_g)**2)
-        
+
         loss_disc_f = r_loss + g_loss
-                        
+
         return loss_disc_f.mean()
 
     def discriminator_forward(self, wav):
@@ -249,5 +248,5 @@ class WavLMLoss(torch.nn.Module):
             y_embeddings = torch.stack(wav_embeddings, dim=1).transpose(-1, -2).flatten(start_dim=1, end_dim=2)
 
         y_d_rs = self.wd(y_embeddings)
-        
+
         return y_d_rs

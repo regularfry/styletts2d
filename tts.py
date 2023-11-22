@@ -25,9 +25,9 @@ import simpleaudio
 
 import phonemizer
 
-from Modules.diffusion.sampler import DiffusionSampler, ADPM2Sampler, KarrasSchedule
+from modules.diffusion.sampler import DiffusionSampler, ADPM2Sampler, KarrasSchedule
 
-from Utils.PLBERT.util import load_plbert
+from utils.PLBERT.util import load_plbert
 
 from collections import OrderedDict
 
@@ -59,7 +59,7 @@ class TTS:
         self.global_phonemizer = get_espeak_backend(language='en-us',
                                                     preserve_punctuation=True,
                                                     with_stress=True)
-        with open("Models/LibriTTS/config.yml") as f:
+        with open("models/LibriTTS/config.yml") as f:
             config = yaml.safe_load(f)
 
         # load pretrained ASR model
@@ -80,7 +80,7 @@ class TTS:
         _ = [self.model[key].eval() for key in self.model]
         _ = [self.model[key].to(self.device) for key in self.model]
 
-        self.params_whole = torch.load("Models/LibriTTS/epochs_2nd_00020.pth", map_location='cpu')
+        self.params_whole = torch.load("models/LibriTTS/epochs_2nd_00020.pth", map_location='cpu')
         self.params = self.params_whole['net']
 
         for key in self.model:
