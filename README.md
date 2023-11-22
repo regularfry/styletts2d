@@ -12,8 +12,8 @@ Courtesy of `eigenvalue` [over on HN](https://news.ycombinator.com/item?id=38338
 these instructions should get you started on Linux:
 
 ```shell
-git clone https://github.com/yl4579/StyleTTS2.git
-cd StyleTTS2
+git clone https://github.com/regularfry/styletts2d.git
+cd styletts2d
 python3 -m venv venv
 source venv/bin/activate
 python3 -m pip install --upgrade pip
