@@ -20,10 +20,10 @@ python3 -m pip install --upgrade pip
 python3 -m pip install wheel
 pip install -r requirements.txt
 pip install phonemizer librosa gdown
-gdown https://drive.google.com/uc?id=1jK_VV3TnGM9dkrIMsdQ_upov8FrIymr7
+gdown "https://drive.google.com/uc?id=1jK_VV3TnGM9dkrIMsdQ_upov8FrIymr7"
 7zz x Models.zip
 rm Models.zip
-pip install pickleshare nltk SoundFile
+pip install pickleshare nltk
 python -c "import nltk; nltk.download('punkt')"
 ```
 
